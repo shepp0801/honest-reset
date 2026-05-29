@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 400" role="img" aria-label="The Honest Reset">
+  <rect width="480" height="400" fill="#F2EFE4"/>
+  <!-- Plant -->
+  <g transform="translate(240 108)">
+    <path d="M0 28 L0 -8" stroke="#555D42" stroke-width="3" stroke-linecap="round"/>
+    <path d="M0 -2 C-18 8 -28 22 -26 38 C-24 50 -12 56 0 52" fill="#8C9A86"/>
+    <path d="M0 -6 C14 0 24 14 22 32 C20 46 10 54 0 50" fill="#B07D6B"/>
+    <path d="M2 -10 C20 2 30 18 26 36 C22 50 12 56 2 52" fill="#B07D6B" opacity="0.9"/>
+    <path d="M0 -2 L0 14" stroke="#8C9A86" stroke-width="1" opacity="0.5"/>
+    <path d="M0 -6 L8 20" stroke="#B07D6B" stroke-width="1" opacity="0.4"/>
+    <path d="M2 -10 L12 18" stroke="#B07D6B" stroke-width="1" opacity="0.35"/>
+  </g>
+  <!-- THE -->
+  <text x="118" y="168" fill="#555D42" font-family="Arial Narrow, Helvetica Neue, sans-serif" font-size="28" font-weight="700" letter-spacing="6">THE</text>
+  <!-- HONEST -->
+  <text x="118" y="248" fill="#555D42" font-family="Arial Narrow, Helvetica Neue, sans-serif" font-size="72" font-weight="800" letter-spacing="2">HONEST</text>
+  <!-- RESET -->
+  <text x="118" y="328" fill="#555D42" font-family="Arial Narrow, Helvetica Neue, sans-serif" font-size="72" font-weight="800" letter-spacing="2">RESET</text>
+</svg>

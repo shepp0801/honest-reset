@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* The Honest Reset — sage green + terracotta on warm cream / near-black */
+@theme {
+  --color-surface: #ebe6dc;
+  --color-surface-elevated: #faf7f1;
+  --color-border: #d1cbbf;
+  --color-text: #4f5848;
+  --color-muted: #737c6c;
+  --color-sage: #6e7d66;
+  --color-terracotta: #b88478;
+  --color-accent: #b88478;
+  --color-accent-hover: #a67367;
+  --color-accent-secondary: #6e7d66;
+  --color-on-accent: #faf7f1;
+  --color-on-sage: #faf7f1;
+  --color-danger: #b54a4a;
+  --color-success: #6b8f71;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Source Sans 3", system-ui, sans-serif;
+}
+
+.dark {
+  --color-surface: #121210;
+  --color-surface-elevated: #1e1d1b;
+  --color-border: #3a3834;
+  --color-text: #e8e4da;
+  --color-muted: #a8a89e;
+  --color-sage: #8a9a82;
+  --color-terracotta: #c99a8e;
+  --color-accent: #c99a8e;
+  --color-accent-hover: #d4ab9f;
+  --color-accent-secondary: #8a9a82;
+  --color-on-accent: #121210;
+  --color-on-sage: #121210;
+  --color-danger: #e07a7a;
+  --color-success: #8fb896;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  background-image:
+    radial-gradient(
+      ellipse 100% 60% at 100% 0%,
+      color-mix(in srgb, var(--color-terracotta) 10%, transparent),
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 120% 80% at 0% 0%,
+      color-mix(in srgb, var(--color-sage) 14%, transparent),
+      transparent 55%
+    );
+}
+
+.dark body {
+  background-image:
+    radial-gradient(
+      ellipse 100% 60% at 100% 0%,
+      color-mix(in srgb, var(--color-terracotta) 8%, transparent),
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 120% 80% at 0% 0%,
+      color-mix(in srgb, var(--color-sage) 10%, transparent),
+      transparent 55%
+    );
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  color: var(--color-text);
+}
