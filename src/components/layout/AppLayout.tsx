@@ -14,6 +14,7 @@ const navItems = [
   { to: '/labs', label: 'Labs' },
   { to: '/meds', label: 'Medications & Supplements' },
   { to: '/goals', label: 'Goals' },
+  { to: '/settings', label: 'Settings' },
   { to: '/trust', label: 'Privacy & Trust' },
 ]
 

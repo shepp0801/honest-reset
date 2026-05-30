@@ -58,7 +58,7 @@ export function TrustPage() {
     setExportSuccess('')
     try {
       const profileIds = profiles.map((p) => p.id)
-      const payload = await fetchUserDataExport(user.id, profileIds)
+      const payload = await fetchUserDataExport(user.id, profileIds, user.email ?? undefined)
       downloadJsonExport(payload)
       setExportSuccess('Your data export downloaded successfully.')
     } catch (err) {

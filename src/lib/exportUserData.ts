@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { getMacroGoals, getWaterGoalOz } from './plannerConstants'
 import type {
+  AccountSettings,
   BloodPressureReading,
   DailyLog,
   FoodEntry,
@@ -17,6 +18,7 @@ import type {
 export interface UserDataExport {
   exportedAt: string
   accountOwnerId: string
+  accountProfile: (AccountSettings & { email?: string }) | null
   profiles: HealthProfile[]
   preferences: {
     theme: string | null
@@ -55,6 +57,7 @@ const EXPORT_TABLES = [
 export async function fetchUserDataExport(
   accountOwnerId: string,
   profileIds: string[],
+  accountEmail?: string,
 ): Promise<UserDataExport> {
   const profilesRes = await supabase
     .from('health_profiles')
@@ -63,6 +66,12 @@ export async function fetchUserDataExport(
     .order('is_primary', { ascending: false })
 
   const profiles = (profilesRes.data ?? []) as HealthProfile[]
+
+  const settingsRes = await supabase
+    .from('account_settings')
+    .select('*')
+    .eq('account_owner_id', accountOwnerId)
+    .maybeSingle()
 
   const queries = EXPORT_TABLES.map((table) =>
     supabase
@@ -88,6 +97,9 @@ export async function fetchUserDataExport(
   return {
     exportedAt: new Date().toISOString(),
     accountOwnerId,
+    accountProfile: settingsRes.data
+      ? ({ ...(settingsRes.data as AccountSettings), email: accountEmail })
+      : null,
     profiles,
     preferences: {
       theme: localStorage.getItem('theme'),

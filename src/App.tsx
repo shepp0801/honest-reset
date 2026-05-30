@@ -12,6 +12,7 @@ import { MedsSupplementsPage } from './pages/MedsSupplementsPage'
 import { GoalsPage } from './pages/GoalsPage'
 import { WeeklyCheckinPage } from './pages/WeeklyCheckinPage'
 import { TrustPage } from './pages/TrustPage'
+import { SettingsPage } from './pages/SettingsPage'
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
                 <Route path="labs" element={<LabValuesPage />} />
                 <Route path="meds" element={<MedsSupplementsPage />} />
                 <Route path="goals" element={<GoalsPage />} />
+                <Route path="settings" element={<SettingsPage />} />
                 <Route path="trust" element={<TrustPage />} />
               </Route>
             </Route>

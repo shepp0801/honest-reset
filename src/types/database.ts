@@ -149,5 +149,19 @@ export interface AccountSettings {
   account_owner_id: string
   plan: AccountPlan
   max_profiles: number
+  first_name: string | null
+  last_name: string | null
+  gender: string | null
+  age: number | null
+  marketing_opt_in: boolean
   updated_at: string
 }
+
+export const GENDER_OPTIONS = [
+  '',
+  'Female',
+  'Male',
+  'Non-binary',
+  'Prefer not to say',
+  'Other',
+] as const
