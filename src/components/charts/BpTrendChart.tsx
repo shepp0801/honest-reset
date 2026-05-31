@@ -27,6 +27,7 @@ interface BpTrendChartProps {
   compact?: boolean
   targetSystolic?: number | null
   targetDiastolic?: number | null
+  fillHeight?: boolean
 }
 
 const SYSTOLIC_COLOR = 'var(--color-terracotta)'
@@ -78,6 +79,7 @@ export function BpTrendChart({
   compact = false,
   targetSystolic = null,
   targetDiastolic = null,
+  fillHeight = false,
 }: BpTrendChartProps) {
   const bpValues = data.flatMap((d) => [d.systolic, d.diastolic])
   const goalValues = [
@@ -87,28 +89,43 @@ export function BpTrendChart({
   const allValues = [...bpValues, ...goalValues]
   const min = allValues.length ? Math.min(...allValues) : 0
   const max = allValues.length ? Math.max(...allValues) : 0
-  const padding = allValues.length ? Math.max(4, (max - min) * 0.08 || 4) : 4
+  const range = max - min
+  const padding = allValues.length ? Math.max(range * 0.06, 4) : 4
+  const chartMargins = compact
+    ? { top: 8, right: 8, left: 0, bottom: 0 }
+    : { top: 5, right: 10, left: 0, bottom: 5 }
   const yMin = allValues.length ? Math.floor(min - padding) : 0
   const yMax = allValues.length ? Math.ceil(max + padding) : 200
 
   return (
     <div
-      className={`rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[0_2px_12px_rgba(85,93,66,0.06)] ${compact ? 'p-3' : 'p-4'} ${className}`}
+      className={`flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[0_2px_12px_rgba(85,93,66,0.06)] ${compact ? 'p-3' : 'p-4'} ${fillHeight ? 'h-full min-h-0' : ''} ${className}`}
     >
-      <h3 className={`font-display text-sm font-semibold text-[var(--color-text)] ${compact ? 'mb-2' : 'mb-3'}`}>
+      <h3
+        className={`shrink-0 font-display text-sm font-semibold text-[var(--color-text)] ${compact ? 'mb-2' : 'mb-3'}`}
+      >
         {title}
       </h3>
       {data.length === 0 ? (
         <p className="py-8 text-center text-sm text-[var(--color-muted)]">{emptyMessage}</p>
       ) : (
-        <ResponsiveContainer width="100%" height={chartHeight}>
-          <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <div
+          className={fillHeight ? 'min-h-[120px] w-full min-w-0 flex-1' : 'w-full'}
+          style={fillHeight ? undefined : { height: chartHeight }}
+        >
+          <ResponsiveContainer width="100%" height={fillHeight ? '100%' : chartHeight}>
+          <LineChart data={data} margin={chartMargins}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="var(--color-border)"
               vertical={false}
             />
-            <XAxis dataKey="label" tick={axisTick} interval="preserveStartEnd" />
+            <XAxis
+              dataKey="label"
+              tick={axisTick}
+              interval="preserveStartEnd"
+              height={compact ? 28 : 30}
+            />
             <YAxis tick={axisTick} width={36} domain={[yMin, yMax]} />
             <Tooltip
               contentStyle={tooltipStyle}
@@ -122,7 +139,11 @@ export function BpTrendChart({
                 color: 'var(--color-text)',
               }}
             />
-            <Legend content={<BpLegend compact={compact} />} />
+            <Legend
+              verticalAlign="bottom"
+              wrapperStyle={{ paddingTop: compact ? 4 : 8 }}
+              content={<BpLegend compact={compact} />}
+            />
             {targetSystolic != null && (
               <ReferenceLine
                 y={targetSystolic}
@@ -173,6 +194,7 @@ export function BpTrendChart({
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
       )}
     </div>
   )

@@ -16,8 +16,8 @@ import { useHealthGoals } from '../hooks/useHealthGoals'
 import { todayISO } from '../lib/date'
 import { supabase } from '../lib/supabase'
 
-const MOBILE_CHART_HEIGHT = 180
-const DESKTOP_CHART_HEIGHT = 120
+const MOBILE_CHART_HEIGHT = 200
+const DESKTOP_CHART_HEIGHT = 140
 
 export function DashboardPage() {
   const { user } = useAuth()
@@ -102,12 +102,14 @@ export function DashboardPage() {
       {weekly.data && <WeeklyCheckinStrip data={weekly.data} compact />}
 
       {/* Desktop: three-column grid fits one screen without scrolling */}
-      <div className="hidden lg:grid lg:grid-cols-3 lg:gap-2">
+      <div className="hidden lg:grid lg:grid-cols-3 lg:items-stretch lg:gap-2">
         <WeightTrendChart
           title="Weight (30 days)"
           data={data?.weightChart ?? []}
           chartHeight={DESKTOP_CHART_HEIGHT}
           compact
+          fillHeight
+          className="h-full"
           targetWeightLbs={chartGoals.targetWeightLbs}
         />
         <TrendChart
@@ -117,6 +119,8 @@ export function DashboardPage() {
           color="#B88478"
           chartHeight={DESKTOP_CHART_HEIGHT}
           compact
+          fillHeight
+          className="h-full"
           emptyMessage="Log A1C values on the Labs page"
         />
         <MacroProgressCard
@@ -133,6 +137,8 @@ export function DashboardPage() {
           color="#6E7D66"
           chartHeight={DESKTOP_CHART_HEIGHT}
           compact
+          fillHeight
+          className="h-full"
           referenceY={chartGoals.dailyStepGoal}
           referenceLabel="Goal"
         />
@@ -141,6 +147,8 @@ export function DashboardPage() {
           data={data?.bloodPressureChart ?? []}
           chartHeight={DESKTOP_CHART_HEIGHT}
           compact
+          fillHeight
+          className="h-full"
           emptyMessage="Log blood pressure on the Daily Log"
           targetSystolic={chartGoals.targetSystolic}
           targetDiastolic={chartGoals.targetDiastolic}
@@ -149,12 +157,11 @@ export function DashboardPage() {
 
       {/* Mobile & tablet: stacked layout */}
       <div className="space-y-4 lg:hidden">
-        <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
+        <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
           <WeightTrendChart
             title="Weight (last 30 days)"
             data={data?.weightChart ?? []}
             chartHeight={MOBILE_CHART_HEIGHT}
-            className="h-full"
             targetWeightLbs={chartGoals.targetWeightLbs}
           />
           <TrendChart
@@ -163,7 +170,6 @@ export function DashboardPage() {
             unit="%"
             color="#B88478"
             chartHeight={MOBILE_CHART_HEIGHT}
-            className="h-full"
             emptyMessage="Log A1C values on the Labs page"
           />
         </div>
@@ -178,12 +184,14 @@ export function DashboardPage() {
           <WaterProgressCard {...waterCardProps} />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
+        <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
           <TrendChart
             title="Steps (30 days)"
             data={data?.stepsChart ?? []}
             color="#6E7D66"
             chartHeight={MOBILE_CHART_HEIGHT}
+            fillHeight
+            className="h-full"
             referenceY={chartGoals.dailyStepGoal}
             referenceLabel="Goal"
           />
@@ -191,7 +199,8 @@ export function DashboardPage() {
             title="Blood pressure (30 days)"
             data={data?.bloodPressureChart ?? []}
             chartHeight={MOBILE_CHART_HEIGHT}
-            className="w-full"
+            fillHeight
+            className="h-full w-full"
             emptyMessage="Log blood pressure on the Daily Log"
             targetSystolic={chartGoals.targetSystolic}
             targetDiastolic={chartGoals.targetDiastolic}

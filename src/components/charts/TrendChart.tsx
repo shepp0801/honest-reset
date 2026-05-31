@@ -27,6 +27,8 @@ interface TrendChartProps {
   /** Horizontal dashed goal line (e.g. daily step target) */
   referenceY?: number | null
   referenceLabel?: string
+  /** Expand plot to fill a stretched dashboard card (use with h-full on parent grid cell) */
+  fillHeight?: boolean
 }
 
 export function TrendChart({
@@ -40,30 +42,46 @@ export function TrendChart({
   compact = false,
   referenceY = null,
   referenceLabel = 'Goal',
+  fillHeight = false,
 }: TrendChartProps) {
   const values = data.map((d) => d.value)
   const refValues = referenceY != null ? [...values, referenceY] : values
   const min = refValues.length ? Math.min(...refValues) : 0
   const max = refValues.length ? Math.max(...refValues) : 0
-  const padding = refValues.length ? Math.max(1, (max - min) * 0.08 || 1) : 1
+  const range = max - min
+  const padding = refValues.length ? Math.max(range * 0.06, range > 0 ? 1 : 8) : 8
   const yMin = refValues.length ? Math.floor(min - padding) : 0
   const yMax = refValues.length ? Math.ceil(max + padding) : 100
+  const chartMargins = compact
+    ? { top: 8, right: 8, left: 0, bottom: 0 }
+    : { top: 5, right: 10, left: 0, bottom: 5 }
 
   return (
     <div
-      className={`rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[0_2px_12px_rgba(85,93,66,0.06)] ${compact ? 'p-3' : 'p-4'} ${className}`}
+      className={`flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[0_2px_12px_rgba(85,93,66,0.06)] ${compact ? 'p-3' : 'p-4'} ${fillHeight ? 'h-full min-h-0' : ''} ${className}`}
     >
-      <h3 className={`font-display text-sm font-semibold text-[var(--color-text)] ${compact ? 'mb-2' : 'mb-3'}`}>{title}</h3>
+      <h3
+        className={`shrink-0 font-display text-sm font-semibold text-[var(--color-text)] ${compact ? 'mb-2' : 'mb-3'}`}
+      >
+        {title}
+      </h3>
       {data.length === 0 ? (
         <p className="py-8 text-center text-sm text-[var(--color-muted)]">{emptyMessage}</p>
       ) : (
-        <ResponsiveContainer width="100%" height={chartHeight}>
-          <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <div
+          className={
+            fillHeight ? 'min-h-[120px] w-full min-w-0 flex-1' : 'w-full'
+          }
+          style={fillHeight ? undefined : { height: chartHeight }}
+        >
+          <ResponsiveContainer width="100%" height={fillHeight ? '100%' : chartHeight}>
+          <LineChart data={data} margin={chartMargins}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
             <XAxis
               dataKey="label"
               tick={{ fontSize: 11, fill: 'var(--color-muted)' }}
               interval="preserveStartEnd"
+              height={compact ? 28 : 30}
             />
             <YAxis
               domain={[yMin, yMax]}
@@ -103,6 +121,7 @@ export function TrendChart({
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
       )}
     </div>
   )

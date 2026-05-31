@@ -18,6 +18,7 @@ interface WeightTrendChartProps {
   className?: string
   compact?: boolean
   targetWeightLbs?: number | null
+  fillHeight?: boolean
 }
 
 function weightChangeLabel(data: ChartPoint[]): string | null {
@@ -38,21 +39,28 @@ export function WeightTrendChart({
   className = '',
   compact = false,
   targetWeightLbs = null,
+  fillHeight = false,
 }: WeightTrendChartProps) {
   const change = weightChangeLabel(data)
   const values = data.map((d) => d.value)
   const allValues = targetWeightLbs != null ? [...values, targetWeightLbs] : values
   const min = allValues.length ? Math.min(...allValues) : 0
   const max = allValues.length ? Math.max(...allValues) : 0
-  const padding = values.length ? Math.max(2, (max - min) * 0.1 || 2) : 2
-  const yMin = values.length ? Math.floor(min - padding) : 0
-  const yMax = values.length ? Math.ceil(max + padding) : 200
+  const range = max - min
+  const padding = allValues.length ? Math.max(range * 0.06, 2) : 2
+  const yMin = allValues.length ? Math.floor(min - padding) : 0
+  const yMax = allValues.length ? Math.ceil(max + padding) : 200
+  const chartMargins = compact
+    ? { top: 8, right: 8, left: 4, bottom: 0 }
+    : { top: 5, right: 10, left: 4, bottom: 5 }
 
   return (
     <div
-      className={`flex h-full flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[0_2px_12px_rgba(85,93,66,0.06)] ${compact ? 'p-3' : 'p-4'} ${className}`}
+      className={`flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[0_2px_12px_rgba(85,93,66,0.06)] ${compact ? 'p-3' : 'p-4'} ${fillHeight ? 'h-full min-h-0' : ''} ${className}`}
     >
-      <div className={`flex flex-wrap items-baseline justify-between gap-2 ${compact ? 'mb-2' : 'mb-3'}`}>
+      <div
+        className={`flex shrink-0 flex-wrap items-baseline justify-between gap-2 ${compact ? 'mb-2' : 'mb-3'}`}
+      >
         <h3 className="font-display text-sm font-semibold text-[var(--color-text)]">{title}</h3>
         {change && (
           <span className="text-xs font-medium text-[var(--color-muted)]">{change}</span>
@@ -61,13 +69,18 @@ export function WeightTrendChart({
       {data.length === 0 ? (
         <p className="py-8 text-center text-sm text-[var(--color-muted)]">{emptyMessage}</p>
       ) : (
-        <ResponsiveContainer width="100%" height={chartHeight}>
-          <LineChart data={data} margin={{ top: 5, right: 10, left: 4, bottom: 5 }}>
+        <div
+          className={fillHeight ? 'min-h-[120px] w-full min-w-0 flex-1' : 'w-full'}
+          style={fillHeight ? undefined : { height: chartHeight }}
+        >
+          <ResponsiveContainer width="100%" height={fillHeight ? '100%' : chartHeight}>
+          <LineChart data={data} margin={chartMargins}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
             <XAxis
               dataKey="label"
               tick={{ fontSize: 11, fill: 'var(--color-muted)' }}
               interval="preserveStartEnd"
+              height={compact ? 28 : 30}
             />
             <YAxis
               domain={[yMin, yMax]}
@@ -108,6 +121,7 @@ export function WeightTrendChart({
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
       )}
     </div>
   )
