@@ -51,7 +51,7 @@ export function AppLayout() {
       <aside className="hidden h-dvh w-64 shrink-0 flex-col overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 md:sticky md:top-0 md:flex">
         <div className="shrink-0 px-1 text-center">
           <BrandLogo size="nav" className="mx-auto object-center" />
-          <p className="mt-2 text-xs leading-snug text-[var(--color-muted)]">
+          <p className="mt-1 text-xs leading-snug text-[var(--color-muted)]">
             Log honestly. Live intentionally.
           </p>
         </div>

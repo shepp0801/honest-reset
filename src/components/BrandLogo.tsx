@@ -9,7 +9,7 @@ const heights = {
   sm: 'h-32',
   header: 'h-40',
   md: 'h-[11rem]',
-  nav: 'h-[11.5rem] max-w-[27rem]',
+  nav: 'h-auto max-h-[7.5rem] w-full max-w-[15.5rem]',
   lg: 'h-[22rem]',
 }
 
