@@ -14,7 +14,6 @@ const primaryNavItems = [
   { to: '/labs', label: 'Labs' },
   { to: '/meds', label: 'Medications & Supplements' },
   { to: '/goals', label: 'Goals' },
-  { to: '/trust', label: 'Privacy & Trust' },
 ]
 
 const settingsNavItem = { to: '/settings', label: 'Settings' }

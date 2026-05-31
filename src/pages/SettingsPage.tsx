@@ -1,10 +1,10 @@
 import { type FormEvent, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../context/ProfileContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import { GENDER_OPTIONS } from '../types/database'
+import { PrivacyTrustSection } from '../components/settings/PrivacyTrustSection'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Card, CardTitle } from '../components/ui/Card'
@@ -193,29 +193,18 @@ export function SettingsPage() {
         </Button>
       </form>
 
-      <Card>
-        <CardTitle>More settings</CardTitle>
-        <ul className="space-y-2 text-sm">
-          <li>
-            <Link
-              to="/goals"
-              className="font-medium text-[var(--color-accent)] underline-offset-2 hover:underline"
-            >
-              Daily goals
-            </Link>
-            <span className="text-[var(--color-muted)]"> — water and macro targets</span>
-          </li>
-          <li>
-            <Link
-              to="/trust"
-              className="font-medium text-[var(--color-accent)] underline-offset-2 hover:underline"
-            >
-              Privacy &amp; Trust
-            </Link>
-            <span className="text-[var(--color-muted)]"> — export data, household, delete account</span>
-          </li>
-        </ul>
-      </Card>
+      <section className="space-y-4 border-t border-[var(--color-border)] pt-8">
+        <div>
+          <h2 className="font-display text-lg font-semibold text-[var(--color-text)]">
+            Privacy &amp; Trust
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--color-muted)]">
+            Your health story is personal. The Honest Reset is built so your data stays yours — not
+            a product to sell.
+          </p>
+        </div>
+        <PrivacyTrustSection />
+      </section>
     </div>
   )
 }
