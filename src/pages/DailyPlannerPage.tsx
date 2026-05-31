@@ -96,6 +96,137 @@ function initialMeals(): Record<MealType, MealForm> {
   }
 }
 
+function workoutHasData(w: WorkoutForm): boolean {
+  return w.exercise_name.trim() !== ''
+}
+
+type PlannerSnapshotInput = {
+  weight: string
+  systolic: string
+  diastolic: string
+  bloodGlucose: string
+  restingHr: string
+  meals: Record<MealType, MealForm>
+  waterOz: string
+  bedtime: string
+  wakeTime: string
+  sleepHours: string
+  sleepQuality: number | null
+  workouts: WorkoutForm[]
+  checkedMedIds: string[]
+  energy: number | null
+  mood: number | null
+  stress: number | null
+  notes: string
+}
+
+function buildPlannerSnapshot(input: PlannerSnapshotInput): string {
+  return JSON.stringify({
+    ...input,
+    checkedMedIds: [...input.checkedMedIds].sort(),
+  })
+}
+
+function vitalsComplete(input: PlannerSnapshotInput): boolean {
+  return (
+    input.weight !== '' ||
+    input.systolic !== '' ||
+    input.diastolic !== '' ||
+    input.bloodGlucose !== '' ||
+    input.restingHr !== ''
+  )
+}
+
+function vitalsSummary(input: PlannerSnapshotInput): string {
+  const parts: string[] = []
+  if (input.weight) parts.push(`${input.weight} lbs`)
+  if (input.systolic && input.diastolic) parts.push(`${input.systolic}/${input.diastolic}`)
+  else if (input.systolic) parts.push(`${input.systolic} sys`)
+  else if (input.diastolic) parts.push(`${input.diastolic} dia`)
+  if (input.bloodGlucose) parts.push(`${input.bloodGlucose} mg/dL glucose`)
+  if (input.restingHr) parts.push(`${input.restingHr} BPM`)
+  return parts.join(' · ') || 'Nothing logged yet'
+}
+
+function mealsComplete(input: PlannerSnapshotInput): boolean {
+  return Object.values(input.meals).some(mealHasData)
+}
+
+function mealsSummary(totals: { calories: number; protein: number }): string {
+  if (totals.calories <= 0 && totals.protein <= 0) return 'Nothing logged yet'
+  const parts: string[] = []
+  if (totals.calories > 0) parts.push(`${Math.round(totals.calories)} cal`)
+  if (totals.protein > 0) parts.push(`${Math.round(totals.protein)}g protein`)
+  return parts.join(' · ')
+}
+
+function waterComplete(waterOz: string): boolean {
+  return waterOz !== ''
+}
+
+function waterSummary(waterOz: string, waterPct: number, waterGoal: number): string {
+  if (waterOz === '') return 'Nothing logged yet'
+  const oz = numOrNull(waterOz) ?? 0
+  return `${oz} oz (${waterPct}% of ${waterGoal} oz goal)`
+}
+
+function sleepComplete(input: PlannerSnapshotInput): boolean {
+  return (
+    input.bedtime !== '' ||
+    input.wakeTime !== '' ||
+    input.sleepHours !== '' ||
+    input.sleepQuality != null
+  )
+}
+
+function sleepSummary(input: PlannerSnapshotInput): string {
+  const parts: string[] = []
+  if (input.sleepHours) parts.push(`${input.sleepHours} hrs`)
+  else if (input.bedtime && input.wakeTime) parts.push(`${input.bedtime}–${input.wakeTime}`)
+  if (input.sleepQuality != null) parts.push(`quality ${input.sleepQuality}/10`)
+  return parts.join(' · ') || 'Nothing logged yet'
+}
+
+function exerciseComplete(workouts: WorkoutForm[]): boolean {
+  return workouts.some(workoutHasData)
+}
+
+function exerciseSummary(workouts: WorkoutForm[]): string {
+  const logged = workouts.filter(workoutHasData)
+  if (!logged.length) return 'Nothing logged yet'
+  const names = logged.map((w) => w.exercise_name.trim()).filter(Boolean)
+  const count = logged.length
+  const label = count === 1 ? '1 workout' : `${count} workouts`
+  return names.length ? `${label} · ${names.join(', ')}` : label
+}
+
+function medsComplete(total: number, done: number): boolean {
+  return total > 0 && done === total
+}
+
+function medsSummary(total: number, done: number): string {
+  if (total === 0) return 'No items on your list'
+  return `${done}/${total} taken`
+}
+
+function feelComplete(input: PlannerSnapshotInput): boolean {
+  return (
+    input.energy != null ||
+    input.mood != null ||
+    input.stress != null ||
+    input.notes.trim() !== ''
+  )
+}
+
+function feelSummary(input: PlannerSnapshotInput): string {
+  const parts: string[] = []
+  if (input.energy != null) parts.push(`Energy ${input.energy}`)
+  if (input.mood != null) parts.push(`Mood ${input.mood}`)
+  if (input.stress != null) parts.push(`Stress ${input.stress}`)
+  if (input.notes.trim()) parts.push('Notes added')
+  return parts.join(' · ') || 'Nothing logged yet'
+}
+
 export function DailyPlannerPage() {
   const { user } = useAuth()
   const profileId = useActiveProfileId()
@@ -130,7 +261,54 @@ export function DailyPlannerPage() {
   const [stress, setStress] = useState<number | null>(null)
   const [notes, setNotes] = useState('')
 
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
+
   const waterGoal = useWaterGoal()
+
+  const snapshotInput: PlannerSnapshotInput = useMemo(
+    () => ({
+      weight,
+      systolic,
+      diastolic,
+      bloodGlucose,
+      restingHr,
+      meals,
+      waterOz,
+      bedtime,
+      wakeTime,
+      sleepHours,
+      sleepQuality,
+      workouts,
+      checkedMedIds,
+      energy,
+      mood,
+      stress,
+      notes,
+    }),
+    [
+      weight,
+      systolic,
+      diastolic,
+      bloodGlucose,
+      restingHr,
+      meals,
+      waterOz,
+      bedtime,
+      wakeTime,
+      sleepHours,
+      sleepQuality,
+      workouts,
+      checkedMedIds,
+      energy,
+      mood,
+      stress,
+      notes,
+    ],
+  )
+
+  const currentSnapshot = useMemo(() => buildPlannerSnapshot(snapshotInput), [snapshotInput])
+
+  const hasUnsavedChanges = savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
   const mealTotals = useMemo(() => {
     let calories = 0
@@ -240,29 +418,52 @@ export function DailyPlannerPage() {
     setMeals(nextMeals)
 
     const wks = (workoutRes.data ?? []) as Workout[]
-    setWorkouts(
-      wks.length
-        ? wks.map((w) => ({
-            exercise_name: w.exercise_name,
-            workout_type: (w.workout_type as WorkoutType) ?? 'Other',
-            duration_minutes: w.duration_minutes?.toString() ?? '',
-            intensity: (w.intensity as WorkoutIntensity) ?? 'Moderate',
-            sets: w.sets?.toString() ?? '',
-            reps: w.reps?.toString() ?? '',
-            weight_lbs: w.weight_lbs?.toString() ?? '',
-            distance_miles: w.distance_miles?.toString() ?? '',
-          }))
-        : [emptyWorkout()],
-    )
+    const loadedWorkouts = wks.length
+      ? wks.map((w) => ({
+          exercise_name: w.exercise_name,
+          workout_type: (w.workout_type as WorkoutType) ?? 'Other',
+          duration_minutes: w.duration_minutes?.toString() ?? '',
+          intensity: (w.intensity as WorkoutIntensity) ?? 'Moderate',
+          sets: w.sets?.toString() ?? '',
+          reps: w.reps?.toString() ?? '',
+          weight_lbs: w.weight_lbs?.toString() ?? '',
+          distance_miles: w.distance_miles?.toString() ?? '',
+        }))
+      : [emptyWorkout()]
+    setWorkouts(loadedWorkouts)
 
     setMedItems((medItemsRes.data as MedicationItem[]) ?? [])
-    setCheckedMedIds(((checkinsRes.data as MedicationCheckin[]) ?? []).map((c) => c.item_id))
+    const loadedCheckedIds = ((checkinsRes.data as MedicationCheckin[]) ?? []).map((c) => c.item_id)
+    setCheckedMedIds(loadedCheckedIds)
+
+    setSavedSnapshot(
+      buildPlannerSnapshot({
+        weight: log?.weight_lbs?.toString() ?? '',
+        systolic: log?.systolic_bp?.toString() ?? '',
+        diastolic: log?.diastolic_bp?.toString() ?? '',
+        bloodGlucose: log?.blood_glucose?.toString() ?? '',
+        restingHr: log?.resting_heart_rate?.toString() ?? '',
+        meals: nextMeals,
+        waterOz: log?.water_oz?.toString() ?? '',
+        bedtime: timeFromDb(log?.bedtime ?? null),
+        wakeTime: timeFromDb(log?.wake_time ?? null),
+        sleepHours: log?.sleep_hours?.toString() ?? '',
+        sleepQuality: log?.sleep_quality ?? null,
+        workouts: loadedWorkouts,
+        checkedMedIds: loadedCheckedIds,
+        energy: log?.energy_level ?? null,
+        mood: log?.mood ?? null,
+        stress: log?.stress_level ?? null,
+        notes: log?.notes ?? '',
+      }),
+    )
 
     setLoading(false)
   }, [user, profileId, logDate])
 
   useEffect(() => {
     setSuccess('')
+    setSavedSnapshot(null)
     loadDay()
   }, [loadDay])
 
@@ -283,8 +484,8 @@ export function DailyPlannerPage() {
     setLogDate(todayISO())
   }
 
-  async function saveAll() {
-    if (!user || !profileId) return
+  const saveAll = useCallback(async () => {
+    if (!user || !profileId || saving) return
     setSaving(true)
     setError('')
     setSuccess('')
@@ -423,7 +624,43 @@ export function DailyPlannerPage() {
       setSuccess(`Saved everything for ${formatPlannerNavDate(logDate)}.`)
       await loadDay()
     }
-  }
+  }, [
+    user,
+    profileId,
+    saving,
+    logDate,
+    weight,
+    systolic,
+    diastolic,
+    bloodGlucose,
+    restingHr,
+    waterOz,
+    bedtime,
+    wakeTime,
+    sleepHours,
+    sleepQuality,
+    energy,
+    mood,
+    stress,
+    notes,
+    meals,
+    workouts,
+    checkedMedSet,
+    medItems,
+    loadDay,
+  ])
+
+  const handleSectionCollapsed = useCallback(() => {
+    if (hasUnsavedChanges && !saving) void saveAll()
+  }, [hasUnsavedChanges, saving, saveAll])
+
+  useEffect(() => {
+    if (loading || !hasUnsavedChanges || saving) return
+    const timer = window.setTimeout(() => {
+      void saveAll()
+    }, 2000)
+    return () => window.clearTimeout(timer)
+  }, [currentSnapshot, loading, hasUnsavedChanges, saving, saveAll])
 
   function updateMeal(type: MealType, patch: Partial<MealForm>) {
     setMeals((prev) => ({ ...prev, [type]: { ...prev[type], ...patch } }))
@@ -485,7 +722,12 @@ export function DailyPlannerPage() {
         <LoadingSpinner label="Loading this day..." />
       ) : (
       <div className="space-y-3">
-        <CollapsibleSection title="Vitals" defaultOpen>
+        <CollapsibleSection
+          title="Vitals"
+          summary={vitalsSummary(snapshotInput)}
+          isComplete={vitalsComplete(snapshotInput)}
+          onCollapsed={handleSectionCollapsed}
+        >
           <div className="space-y-4 pt-3">
             <Input label="Weight (lbs)" type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
             <div className="grid grid-cols-2 gap-3">
@@ -497,7 +739,12 @@ export function DailyPlannerPage() {
           </div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Meals" defaultOpen>
+        <CollapsibleSection
+          title="Meals"
+          summary={mealsSummary(mealTotals)}
+          isComplete={mealsComplete(snapshotInput)}
+          onCollapsed={handleSectionCollapsed}
+        >
           <div className="space-y-6 pt-3">
             {MEAL_SLOTS.map(({ type, label }) => (
               <div key={type} className="space-y-3 rounded-xl bg-[color-mix(in_srgb,var(--color-sage)_6%,transparent)] p-3">
@@ -539,7 +786,12 @@ export function DailyPlannerPage() {
           </div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Water">
+        <CollapsibleSection
+          title="Water"
+          summary={waterSummary(waterOz, waterPct, waterGoal)}
+          isComplete={waterComplete(waterOz)}
+          onCollapsed={handleSectionCollapsed}
+        >
           <div className="space-y-3 pt-3">
             <Input label="Water intake (oz)" type="number" step="0.1" value={waterOz} onChange={(e) => setWaterOz(e.target.value)} />
             <div>
@@ -557,7 +809,12 @@ export function DailyPlannerPage() {
           </div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Sleep">
+        <CollapsibleSection
+          title="Sleep"
+          summary={sleepSummary(snapshotInput)}
+          isComplete={sleepComplete(snapshotInput)}
+          onCollapsed={handleSectionCollapsed}
+        >
           <div className="space-y-4 pt-3">
             <div className="grid grid-cols-2 gap-3">
               <Input label="Bedtime" type="time" value={bedtime} onChange={(e) => { setBedtime(e.target.value); setSleepHoursManual(false) }} />
@@ -574,7 +831,12 @@ export function DailyPlannerPage() {
           </div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Exercise">
+        <CollapsibleSection
+          title="Exercise"
+          summary={exerciseSummary(workouts)}
+          isComplete={exerciseComplete(workouts)}
+          onCollapsed={handleSectionCollapsed}
+        >
           <div className="space-y-4 pt-3">
             {workouts.map((w, index) => (
               <div key={index} className="space-y-3 rounded-xl border border-[var(--color-border)] p-3">
@@ -610,7 +872,12 @@ export function DailyPlannerPage() {
           </div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Medications & Supplements">
+        <CollapsibleSection
+          title="Medications & Supplements"
+          summary={medsSummary(medChecklistTotal, medChecklistDone)}
+          isComplete={medsComplete(medChecklistTotal, medChecklistDone)}
+          onCollapsed={handleSectionCollapsed}
+        >
           <div className="space-y-5 pt-3">
             {medChecklistTotal > 0 && (
               <p className="text-sm text-[var(--color-muted)]">
@@ -638,7 +905,12 @@ export function DailyPlannerPage() {
           </div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="How I Feel Today">
+        <CollapsibleSection
+          title="How I Feel Today"
+          summary={feelSummary(snapshotInput)}
+          isComplete={feelComplete(snapshotInput)}
+          onCollapsed={handleSectionCollapsed}
+        >
           <div className="space-y-5 pt-3">
             <ScaleRow label="Energy level" value={energy} onChange={setEnergy} />
             <ScaleRow label="Mood" value={mood} onChange={setMood} />
@@ -649,10 +921,23 @@ export function DailyPlannerPage() {
       </div>
       )}
 
-      <div className="fixed bottom-[calc(3.25rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-20 border-t border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface-elevated)_96%,transparent)] px-4 py-3 backdrop-blur-md md:bottom-0 md:left-64">
-        <div className="mx-auto max-w-4xl">
-          <Button type="button" fullWidth disabled={saving} onClick={saveAll}>
-            {saving ? 'Saving...' : 'Save All'}
+      <div className="pointer-events-none fixed bottom-[calc(3.25rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-20 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:bottom-0 md:left-64 md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="pointer-events-auto mx-auto max-w-4xl rounded-2xl bg-[color-mix(in_srgb,var(--color-surface-elevated)_96%,transparent)] px-1 py-3 shadow-[0_-10px_28px_-6px_rgba(42,32,28,0.18)] backdrop-blur-md">
+          <Button
+            type="button"
+            fullWidth
+            disabled={saving || !hasUnsavedChanges}
+            onClick={saveAll}
+            className="relative"
+          >
+            <span className="inline-flex items-center justify-center gap-1.5">
+              {saving ? 'Saving...' : 'Save All'}
+              {hasUnsavedChanges && !saving ? (
+                <span className="text-base font-bold leading-none" aria-label="Unsaved changes">
+                  *
+                </span>
+              ) : null}
+            </span>
           </Button>
         </div>
       </div>
