@@ -113,6 +113,7 @@ type PlannerSnapshotInput = {
   sleepHours: string
   sleepQuality: number | null
   workouts: WorkoutForm[]
+  steps: string
   checkedMedIds: string[]
   energy: number | null
   mood: number | null
@@ -200,6 +201,17 @@ function exerciseSummary(workouts: WorkoutForm[]): string {
   return names.length ? `${label} · ${names.join(', ')}` : label
 }
 
+function stepsComplete(steps: string): boolean {
+  return steps !== ''
+}
+
+function stepsSummary(steps: string): string {
+  if (steps === '') return 'Nothing logged yet'
+  const n = intOrNull(steps)
+  if (n == null) return 'Nothing logged yet'
+  return `${n.toLocaleString()} steps`
+}
+
 function medsComplete(total: number, done: number): boolean {
   return total > 0 && done === total
 }
@@ -253,6 +265,7 @@ export function DailyPlannerPage() {
   const [sleepQuality, setSleepQuality] = useState<number | null>(null)
 
   const [workouts, setWorkouts] = useState<WorkoutForm[]>([emptyWorkout()])
+  const [steps, setSteps] = useState('')
   const [medItems, setMedItems] = useState<MedicationItem[]>([])
   const [checkedMedIds, setCheckedMedIds] = useState<string[]>([])
 
@@ -279,6 +292,7 @@ export function DailyPlannerPage() {
       sleepHours,
       sleepQuality,
       workouts,
+      steps,
       checkedMedIds,
       energy,
       mood,
@@ -298,6 +312,7 @@ export function DailyPlannerPage() {
       sleepHours,
       sleepQuality,
       workouts,
+      steps,
       checkedMedIds,
       energy,
       mood,
@@ -394,6 +409,7 @@ export function DailyPlannerPage() {
     setDiastolic(log?.diastolic_bp?.toString() ?? '')
     setBloodGlucose(log?.blood_glucose?.toString() ?? '')
     setRestingHr(log?.resting_heart_rate?.toString() ?? '')
+    setSteps(log?.steps?.toString() ?? '')
     setWaterOz(log?.water_oz?.toString() ?? '')
     setBedtime(timeFromDb(log?.bedtime ?? null))
     setWakeTime(timeFromDb(log?.wake_time ?? null))
@@ -447,6 +463,7 @@ export function DailyPlannerPage() {
         bloodGlucose: log?.blood_glucose?.toString() ?? '',
         restingHr: log?.resting_heart_rate?.toString() ?? '',
         meals: nextMeals,
+        steps: log?.steps?.toString() ?? '',
         waterOz: log?.water_oz?.toString() ?? '',
         bedtime: timeFromDb(log?.bedtime ?? null),
         wakeTime: timeFromDb(log?.wake_time ?? null),
@@ -504,6 +521,7 @@ export function DailyPlannerPage() {
       diastolic_bp: intOrNull(diastolic),
       blood_glucose: numOrNull(bloodGlucose),
       resting_heart_rate: intOrNull(restingHr),
+      steps: intOrNull(steps),
       water_oz: numOrNull(waterOz),
       bedtime: bedtime ? `${bedtime}:00` : null,
       wake_time: wakeTime ? `${wakeTime}:00` : null,
@@ -637,6 +655,7 @@ export function DailyPlannerPage() {
     diastolic,
     bloodGlucose,
     restingHr,
+    steps,
     waterOz,
     bedtime,
     wakeTime,
@@ -919,6 +938,27 @@ export function DailyPlannerPage() {
             <ScaleRow label="Mood" value={mood} onChange={setMood} />
             <ScaleRow label="Stress level" value={stress} onChange={setStress} variant="inverted" />
             <Textarea label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Steps"
+          summary={stepsSummary(steps)}
+          isComplete={stepsComplete(steps)}
+          onCollapsed={handleSectionCollapsed}
+        >
+          <div className="space-y-3 pt-3">
+            <p className="text-sm text-[var(--color-muted)]">
+              Log your total steps for the day from your phone, watch, or tracker.
+            </p>
+            <Input
+              label="Steps today"
+              type="number"
+              min={0}
+              step={1}
+              value={steps}
+              onChange={(e) => setSteps(e.target.value)}
+            />
           </div>
         </CollapsibleSection>
       </div>
