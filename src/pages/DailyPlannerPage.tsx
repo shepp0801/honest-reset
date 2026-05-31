@@ -128,6 +128,18 @@ function buildPlannerSnapshot(input: PlannerSnapshotInput): string {
   })
 }
 
+function plannerHasEntryData(input: PlannerSnapshotInput): boolean {
+  return (
+    vitalsComplete(input) ||
+    mealsComplete(input) ||
+    waterComplete(input.waterOz) ||
+    sleepComplete(input) ||
+    exerciseComplete(input.workouts, input.steps) ||
+    input.checkedMedIds.length > 0 ||
+    feelComplete(input)
+  )
+}
+
 function vitalsComplete(input: PlannerSnapshotInput): boolean {
   return (
     input.weight !== '' ||
@@ -267,6 +279,7 @@ export function DailyPlannerPage() {
   const [stress, setStress] = useState<number | null>(null)
 
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
+  const skipAutoSaveRef = useRef(true)
 
   useEffect(() => {
     if (dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)) {
@@ -320,6 +333,7 @@ export function DailyPlannerPage() {
   const currentSnapshot = useMemo(() => buildPlannerSnapshot(snapshotInput), [snapshotInput])
 
   const hasUnsavedChanges = savedSnapshot !== null && currentSnapshot !== savedSnapshot
+  const hasEntryData = useMemo(() => plannerHasEntryData(snapshotInput), [snapshotInput])
 
   const mealTotals = useMemo(() => {
     let calories = 0
@@ -400,6 +414,15 @@ export function DailyPlannerPage() {
     if (loadId !== loadIdRef.current) return
 
     const log = logRes.data as DailyLog | null
+    const bedtimeStr = timeFromDb(log?.bedtime ?? null)
+    const wakeStr = timeFromDb(log?.wake_time ?? null)
+    const sleepManual = !!log?.sleep_hours
+    let sleepHoursStr = log?.sleep_hours?.toString() ?? ''
+    if (!sleepManual) {
+      const calc = calcSleepHours(bedtimeStr, wakeStr)
+      if (calc != null) sleepHoursStr = String(calc)
+    }
+
     setWeight(log?.weight_lbs?.toString() ?? '')
     setSystolic(log?.systolic_bp?.toString() ?? '')
     setDiastolic(log?.diastolic_bp?.toString() ?? '')
@@ -407,10 +430,10 @@ export function DailyPlannerPage() {
     setRestingHr(log?.resting_heart_rate?.toString() ?? '')
     setSteps(log?.steps?.toString() ?? '')
     setWaterOz(log?.water_oz?.toString() ?? '')
-    setBedtime(timeFromDb(log?.bedtime ?? null))
-    setWakeTime(timeFromDb(log?.wake_time ?? null))
-    setSleepHours(log?.sleep_hours?.toString() ?? '')
-    setSleepHoursManual(!!log?.sleep_hours)
+    setBedtime(bedtimeStr)
+    setWakeTime(wakeStr)
+    setSleepHours(sleepHoursStr)
+    setSleepHoursManual(sleepManual)
     setSleepQuality(log?.sleep_quality ?? null)
     setEnergy(log?.energy_level ?? null)
     setMood(log?.mood ?? null)
@@ -464,9 +487,9 @@ export function DailyPlannerPage() {
         meals: nextMeals,
         steps: log?.steps?.toString() ?? '',
         waterOz: log?.water_oz?.toString() ?? '',
-        bedtime: timeFromDb(log?.bedtime ?? null),
-        wakeTime: timeFromDb(log?.wake_time ?? null),
-        sleepHours: log?.sleep_hours?.toString() ?? '',
+        bedtime: bedtimeStr,
+        wakeTime: wakeStr,
+        sleepHours: sleepHoursStr,
         sleepQuality: log?.sleep_quality ?? null,
         workouts: loadedWorkouts,
         checkedMedIds: loadedCheckedIds,
@@ -476,6 +499,7 @@ export function DailyPlannerPage() {
       }),
     )
 
+    skipAutoSaveRef.current = true
     if (showLoading) setLoading(false)
   }, [user, profileId, logDate])
 
@@ -502,11 +526,12 @@ export function DailyPlannerPage() {
     setLogDate(todayISO())
   }
 
-  const saveAll = useCallback(async () => {
+  const saveAll = useCallback(async (options?: { showSuccess?: boolean }) => {
     if (!user || !profileId || saving) return
+    const showSuccess = options?.showSuccess ?? true
     setSaving(true)
     setError('')
-    setSuccess('')
+    if (showSuccess) setSuccess('')
 
     const uid = profileId
     const errors: string[] = []
@@ -639,7 +664,9 @@ export function DailyPlannerPage() {
     if (errors.length) {
       setError(errors.join(' '))
     } else {
-      setSuccess(`Saved everything for ${formatPlannerNavDate(logDate)}.`)
+      if (showSuccess) {
+        setSuccess(`Saved everything for ${formatPlannerNavDate(logDate)}.`)
+      }
       await loadDay({ silent: true })
     }
   }, [
@@ -669,16 +696,23 @@ export function DailyPlannerPage() {
   ])
 
   const handleSectionCollapsed = useCallback(() => {
-    if (hasUnsavedChanges && !saving) void saveAll()
-  }, [hasUnsavedChanges, saving, saveAll])
+    if (hasUnsavedChanges && hasEntryData && !saving) {
+      void saveAll({ showSuccess: false })
+    }
+  }, [hasUnsavedChanges, hasEntryData, saving, saveAll])
 
   useEffect(() => {
-    if (loading || !hasUnsavedChanges || saving) return
+    if (loading) return
+    if (skipAutoSaveRef.current) {
+      skipAutoSaveRef.current = false
+      return
+    }
+    if (!hasUnsavedChanges || !hasEntryData || saving) return
     const timer = window.setTimeout(() => {
-      void saveAll()
+      void saveAll({ showSuccess: false })
     }, 2000)
     return () => window.clearTimeout(timer)
-  }, [currentSnapshot, loading, hasUnsavedChanges, saving, saveAll])
+  }, [currentSnapshot, loading, hasUnsavedChanges, hasEntryData, saving, saveAll])
 
   function updateMeal(type: MealType, patch: Partial<MealForm>) {
     setMeals((prev) => ({ ...prev, [type]: { ...prev[type], ...patch } }))
@@ -961,7 +995,7 @@ export function DailyPlannerPage() {
             type="button"
             fullWidth
             disabled={saving || !hasUnsavedChanges}
-            onClick={saveAll}
+            onClick={() => void saveAll({ showSuccess: true })}
             className="relative"
           >
             <span className="inline-flex items-center justify-center gap-1.5">
