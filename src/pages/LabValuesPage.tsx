@@ -24,6 +24,16 @@ const emptyForm = () => ({
   notes: '',
 })
 
+type LabsTab = 'enter' | 'trends'
+
+function labsTabClass(active: boolean): string {
+  return `rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+    active
+      ? 'bg-[var(--color-accent)] text-[var(--color-on-accent)] shadow-sm'
+      : 'border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:bg-[color-mix(in_srgb,var(--color-accent)_10%,var(--color-surface-elevated))]'
+  }`
+}
+
 export function LabValuesPage() {
   const { user } = useAuth()
   const profileId = useActiveProfileId()
@@ -40,6 +50,7 @@ export function LabValuesPage() {
   const [unit, setUnit] = useState('')
   const [recordedDate, setRecordedDate] = useState(todayISO())
   const [notes, setNotes] = useState('')
+  const [activeTab, setActiveTab] = useState<LabsTab>('enter')
 
   const matrix = useMemo(() => buildLabMatrix(labs), [labs])
   const comparisonMatrix = useMemo(() => matrixForComparisonTable(matrix), [matrix])
@@ -73,6 +84,7 @@ export function LabValuesPage() {
   }
 
   function applyPreset(preset: LabTestPreset) {
+    setActiveTab('enter')
     setEditingId(null)
     setTestName(preset.testName)
     setUnit(preset.unit)
@@ -115,6 +127,7 @@ export function LabValuesPage() {
   }
 
   function startEdit(lab: LabValue) {
+    setActiveTab('enter')
     setEditingId(lab.id)
     setTestName(lab.test_name)
     setValue(String(lab.value))
@@ -211,120 +224,151 @@ export function LabValuesPage() {
       <Alert type="error" message={error} onDismiss={() => setError('')} />
       <Alert type="success" message={success} onDismiss={() => setSuccess('')} />
 
-      <Card className="border-t-[3px] border-t-[var(--color-terracotta)]">
-        <CardTitle>Lab comparison</CardTitle>
-        <LabResultsMatrix matrix={comparisonMatrix} onEditCell={handleEditCell} />
-      </Card>
-
-      {comparisonMatrix.rows.length > 0 && (
-        <Card>
-          <CardTitle>Trends</CardTitle>
-          <LabTestTrendCharts rows={comparisonMatrix.rows} />
-        </Card>
-      )}
-
-      <Card>
-        <CardTitle>Clinical lab presets</CardTitle>
-        <p className="mb-3 text-sm text-[var(--color-muted)]">
-          Tap a test to pre-fill the form below. Units are typical US lab defaults — adjust if needed.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {CLINICAL_LAB_TESTS.map((preset) => (
-            <Button
-              key={preset.testName}
-              type="button"
-              variant="secondary"
-              className="text-xs"
-              onClick={() => applyPreset(preset)}
-            >
-              {preset.testName}
-            </Button>
-          ))}
-        </div>
-      </Card>
-
-      <Card>
-        <CardTitle>Lipid panel</CardTitle>
-        <p className="mb-3 text-sm text-[var(--color-muted)]">
-          Log Total Cholesterol, LDL, HDL, and Triglycerides from the same draw at once.
-        </p>
-        {!showLipidPanel ? (
-          <Button type="button" variant="secondary" onClick={() => setShowLipidPanel(true)}>
-            Enter lipid panel
-          </Button>
-        ) : (
-          <LipidPanelForm
-            saving={saving}
-            onSave={saveLipidPanel}
-            onCancel={() => setShowLipidPanel(false)}
-          />
-        )}
-      </Card>
-
-      <div id="add-lab-form">
-      <Card>
-        <CardTitle>{editingId ? 'Edit lab result' : 'Add lab result'}</CardTitle>
-        {editingId && (
-          <p className="mb-4 text-sm text-[var(--color-muted)]">
-            Editing an entry. Change any field below, then save — or delete this result.
-          </p>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Test name"
-              value={testName}
-              onChange={(e) => setTestName(e.target.value)}
-              placeholder="e.g. A1C"
-            />
-            <Input
-              label="Value"
-              type="number"
-              step="any"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-            />
-            <Input
-              label="Unit"
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-              placeholder="e.g. %"
-            />
-            <Input
-              label="Date"
-              type="date"
-              value={recordedDate}
-              onChange={(e) => setRecordedDate(e.target.value)}
-            />
-          </div>
-          <Textarea label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Saving...' : editingId ? 'Update lab value' : 'Save lab value'}
-            </Button>
-            {editingId && (
-              <>
-                <Button type="button" variant="secondary" onClick={resetForm} disabled={saving}>
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="text-red-600 dark:text-red-400"
-                  disabled={saving}
-                  onClick={() => {
-                    const lab = labs.find((l) => l.id === editingId)
-                    if (lab) handleDelete(lab)
-                  }}
-                >
-                  Delete
-                </Button>
-              </>
-            )}
-          </div>
-        </form>
-      </Card>
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Lab values views">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'enter'}
+          className={labsTabClass(activeTab === 'enter')}
+          onClick={() => setActiveTab('enter')}
+        >
+          Enter Results
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'trends'}
+          className={labsTabClass(activeTab === 'trends')}
+          onClick={() => setActiveTab('trends')}
+        >
+          Trends
+        </button>
       </div>
+
+      {activeTab === 'enter' ? (
+        <div role="tabpanel" className="space-y-6">
+          <Card className="border-t-[3px] border-t-[var(--color-terracotta)]">
+            <CardTitle>Lab comparison</CardTitle>
+            <LabResultsMatrix matrix={comparisonMatrix} onEditCell={handleEditCell} />
+          </Card>
+
+          <div id="add-lab-form">
+            <Card>
+              <CardTitle>{editingId ? 'Edit lab result' : 'Add lab result'}</CardTitle>
+              {editingId && (
+                <p className="mb-4 text-sm text-[var(--color-muted)]">
+                  Editing an entry. Change any field below, then save — or delete this result.
+                </p>
+              )}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input
+                    label="Test name"
+                    value={testName}
+                    onChange={(e) => setTestName(e.target.value)}
+                    placeholder="e.g. A1C"
+                  />
+                  <Input
+                    label="Value"
+                    type="number"
+                    step="any"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                  />
+                  <Input
+                    label="Unit"
+                    value={unit}
+                    onChange={(e) => setUnit(e.target.value)}
+                    placeholder="e.g. %"
+                  />
+                  <Input
+                    label="Date"
+                    type="date"
+                    value={recordedDate}
+                    onChange={(e) => setRecordedDate(e.target.value)}
+                  />
+                </div>
+                <Textarea label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                <div className="flex flex-wrap gap-2">
+                  <Button type="submit" disabled={saving}>
+                    {saving ? 'Saving...' : editingId ? 'Update lab value' : 'Save lab value'}
+                  </Button>
+                  {editingId && (
+                    <>
+                      <Button type="button" variant="secondary" onClick={resetForm} disabled={saving}>
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-red-600 dark:text-red-400"
+                        disabled={saving}
+                        onClick={() => {
+                          const lab = labs.find((l) => l.id === editingId)
+                          if (lab) handleDelete(lab)
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </form>
+            </Card>
+          </div>
+
+          <Card>
+            <CardTitle>Clinical lab presets</CardTitle>
+            <p className="mb-3 text-sm text-[var(--color-muted)]">
+              Tap a preset to pre-fill the form above.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {CLINICAL_LAB_TESTS.map((preset) => (
+                <Button
+                  key={preset.testName}
+                  type="button"
+                  variant="secondary"
+                  className="text-xs"
+                  onClick={() => applyPreset(preset)}
+                >
+                  {preset.testName}
+                </Button>
+              ))}
+            </div>
+          </Card>
+
+          <Card>
+            <CardTitle>Lipid panel</CardTitle>
+            <p className="mb-3 text-sm text-[var(--color-muted)]">
+              Log Total Cholesterol, LDL, HDL, and Triglycerides from the same draw at once.
+            </p>
+            {!showLipidPanel ? (
+              <Button type="button" variant="secondary" onClick={() => setShowLipidPanel(true)}>
+                Enter lipid panel
+              </Button>
+            ) : (
+              <LipidPanelForm
+                saving={saving}
+                onSave={saveLipidPanel}
+                onCancel={() => setShowLipidPanel(false)}
+              />
+            )}
+          </Card>
+        </div>
+      ) : (
+        <div role="tabpanel" className="space-y-6">
+          <p className="text-sm text-[var(--color-muted)]">
+            Charts update automatically as you log new results. Add a new draw on the Enter Results
+            tab.
+          </p>
+          {comparisonMatrix.rows.length > 0 && (
+            <Card>
+              <CardTitle>Trends</CardTitle>
+              <LabTestTrendCharts rows={comparisonMatrix.rows} />
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   )
 }
