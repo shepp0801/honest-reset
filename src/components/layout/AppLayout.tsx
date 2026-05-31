@@ -52,7 +52,7 @@ export function AppLayout() {
         <div className="shrink-0 px-1 text-center">
           <BrandLogo size="nav" className="mx-auto object-center" />
           <p className="mt-2 text-xs leading-snug text-[var(--color-muted)]">
-            Honest tracking, daily.
+            Log honestly. Live intentionally.
           </p>
         </div>
         <nav className="mt-6 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
