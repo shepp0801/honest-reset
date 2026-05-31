@@ -80,7 +80,14 @@ export function useWeeklyDashboard(userId: string | undefined, weekStart?: strin
       weekEnd,
       checkin,
       isComplete: isCheckinComplete(checkin),
-      stats: computeWeeklyStats(logs, medItems, medCheckins, activeWeekStart, weekEnd),
+      stats: computeWeeklyStats(
+        logs,
+        medItems,
+        medCheckins,
+        activeWeekStart,
+        weekEnd,
+        todayISO(),
+      ),
     })
     setLoading(false)
   }, [userId, activeWeekStart])

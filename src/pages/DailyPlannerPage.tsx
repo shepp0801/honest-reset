@@ -188,28 +188,23 @@ function sleepSummary(input: PlannerSnapshotInput): string {
   return parts.join(' · ') || 'Nothing logged yet'
 }
 
-function exerciseComplete(workouts: WorkoutForm[]): boolean {
-  return workouts.some(workoutHasData)
+function exerciseComplete(workouts: WorkoutForm[], steps: string): boolean {
+  const stepCount = intOrNull(steps)
+  return (stepCount != null && stepCount > 0) || workouts.some(workoutHasData)
 }
 
-function exerciseSummary(workouts: WorkoutForm[]): string {
+function exerciseSummary(workouts: WorkoutForm[], steps: string): string {
+  const parts: string[] = []
+  const stepCount = intOrNull(steps)
+  if (stepCount != null && stepCount > 0) {
+    parts.push(`${stepCount.toLocaleString()} steps`)
+  }
   const logged = workouts.filter(workoutHasData)
-  if (!logged.length) return 'Nothing logged yet'
-  const names = logged.map((w) => w.exercise_name.trim()).filter(Boolean)
-  const count = logged.length
-  const label = count === 1 ? '1 workout' : `${count} workouts`
-  return names.length ? `${label} · ${names.join(', ')}` : label
-}
-
-function stepsComplete(steps: string): boolean {
-  return steps !== ''
-}
-
-function stepsSummary(steps: string): string {
-  if (steps === '') return 'Nothing logged yet'
-  const n = intOrNull(steps)
-  if (n == null) return 'Nothing logged yet'
-  return `${n.toLocaleString()} steps`
+  if (logged.length) {
+    const count = logged.length
+    parts.push(count === 1 ? '1 workout logged' : `${count} workouts logged`)
+  }
+  return parts.join(' · ') || 'Nothing logged yet'
 }
 
 function medsComplete(total: number, done: number): boolean {
@@ -856,11 +851,20 @@ export function DailyPlannerPage() {
 
         <CollapsibleSection
           title="Exercise"
-          summary={exerciseSummary(workouts)}
-          isComplete={exerciseComplete(workouts)}
+          summary={exerciseSummary(workouts, steps)}
+          isComplete={exerciseComplete(workouts, steps)}
           onCollapsed={handleSectionCollapsed}
         >
           <div className="space-y-4 pt-3">
+            <Input
+              label="Steps today"
+              type="number"
+              min={0}
+              step={1}
+              value={steps}
+              onChange={(e) => setSteps(e.target.value)}
+              placeholder="e.g. 8000"
+            />
             {workouts.map((w, index) => (
               <div key={index} className="space-y-3 rounded-xl border border-[var(--color-border)] p-3">
                 <div className="flex items-center justify-between">
@@ -946,27 +950,6 @@ export function DailyPlannerPage() {
                 ? "Open today's reflection →"
                 : 'Open reflection for this day →'}
             </Link>
-          </div>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title="Steps"
-          summary={stepsSummary(steps)}
-          isComplete={stepsComplete(steps)}
-          onCollapsed={handleSectionCollapsed}
-        >
-          <div className="space-y-3 pt-3">
-            <p className="text-sm text-[var(--color-muted)]">
-              Log your total steps for the day from your phone, watch, or tracker.
-            </p>
-            <Input
-              label="Steps today"
-              type="number"
-              min={0}
-              step={1}
-              value={steps}
-              onChange={(e) => setSteps(e.target.value)}
-            />
           </div>
         </CollapsibleSection>
       </div>

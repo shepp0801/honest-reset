@@ -7,7 +7,20 @@ export interface WeeklyStats {
   avgMood: number | null
   avgStress: number | null
   medAdherencePct: number | null
+  medsTodayDisplay: string
   latestWeight: number | null
+}
+
+export function formatMedsTodayDisplay(
+  medItems: MedicationItem[],
+  checkins: MedicationCheckin[],
+  today: string,
+): string {
+  const total = medItems.length
+  if (total === 0) return '—'
+  const done = checkins.filter((c) => c.taken_date === today).length
+  if (done === 0) return '—'
+  return `${done}/${total}`
 }
 
 export function computeWeeklyStats(
@@ -16,6 +29,7 @@ export function computeWeeklyStats(
   checkins: MedicationCheckin[],
   weekStart: string,
   weekEnd: string,
+  today: string,
 ): WeeklyStats {
   const weekLogs = logs.filter((l) => l.log_date >= weekStart && l.log_date <= weekEnd)
 
@@ -45,6 +59,7 @@ export function computeWeeklyStats(
     avgMood: avg(weekLogs.map((l) => l.mood)),
     avgStress: avg(weekLogs.map((l) => l.stress_level)),
     medAdherencePct,
+    medsTodayDisplay: formatMedsTodayDisplay(medItems, checkins, today),
     latestWeight,
   }
 }

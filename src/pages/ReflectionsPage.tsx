@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ReflectionStatsStrip } from '../components/reflections/ReflectionStatsStrip'
 import { Alert } from '../components/ui/Alert'
@@ -33,6 +33,18 @@ function moodPillClass(selected: boolean): string {
   }`
 }
 
+function buildReflectionSnapshot(body: string, moodTag: MoodTag | null): string {
+  return JSON.stringify({ body, moodTag })
+}
+
+function snapshotFromReflection(reflection: Reflection | null): string {
+  const tag = reflection?.mood_tag
+  return buildReflectionSnapshot(
+    reflection?.body ?? '',
+    tag && isMoodTag(tag) ? tag : null,
+  )
+}
+
 export function ReflectionsPage() {
   const profileId = useActiveProfileId()
   const { activeProfile } = useProfile()
@@ -45,6 +57,7 @@ export function ReflectionsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [body, setBody] = useState('')
   const [moodTag, setMoodTag] = useState<MoodTag | null>(null)
@@ -59,6 +72,12 @@ export function ReflectionsPage() {
   const today = todayISO()
   const canGoForward = reflectionDate < today
   const prompt = getReflectionPromptForDate(reflectionDate)
+
+  const currentSnapshot = useMemo(
+    () => buildReflectionSnapshot(body, moodTag),
+    [body, moodTag],
+  )
+  const hasUnsavedChanges = savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
   const loadDay = useCallback(async () => {
     if (!profileId) return
@@ -105,15 +124,18 @@ export function ReflectionsPage() {
     if (loadId !== loadIdRef.current) return
 
     const log = logRes.data as DailyLog | null
+    let reflection: Reflection | null
     if (log?.notes?.trim()) {
       await migrateDailyLogNotesToReflection(profileId, reflectionDate, log.notes)
-      const migrated = await fetchReflection(profileId, reflectionDate)
-      applyEntry(migrated, log)
+      reflection = await fetchReflection(profileId, reflectionDate)
+      applyEntry(reflection, log)
     } else {
-      applyEntry((reflectionRes.data as Reflection | null) ?? null, log)
+      reflection = (reflectionRes.data as Reflection | null) ?? null
+      applyEntry(reflection, log)
     }
 
     setPastEntries((listRes.data as Reflection[]) ?? [])
+    setSavedSnapshot(snapshotFromReflection(reflection))
     skipAutoSaveRef.current = true
     setLoading(false)
   }, [profileId, reflectionDate])
@@ -126,6 +148,7 @@ export function ReflectionsPage() {
   }
 
   useEffect(() => {
+    setSavedSnapshot(null)
     void loadDay()
   }, [loadDay])
 
@@ -147,6 +170,7 @@ export function ReflectionsPage() {
     setError('')
     try {
       await saveReflection(profileId, reflectionDate, body, moodTag)
+      setSavedSnapshot(buildReflectionSnapshot(body, moodTag))
       setSavedFlash(true)
       const list = await fetchReflectionList(profileId)
       setPastEntries(list)
@@ -166,11 +190,12 @@ export function ReflectionsPage() {
       skipAutoSaveRef.current = false
       return
     }
+    if (!hasUnsavedChanges || saving) return
     const timer = window.setTimeout(() => {
       void saveRef.current()
     }, 2000)
     return () => window.clearTimeout(timer)
-  }, [body, moodTag, reflectionDate, loading])
+  }, [body, moodTag, reflectionDate, loading, hasUnsavedChanges, saving])
 
   function goToPreviousDay() {
     setReflectionDate((d) => addDaysISO(d, -1))
@@ -277,11 +302,15 @@ export function ReflectionsPage() {
       </label>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button type="button" disabled={saving} onClick={() => void persistReflection()}>
+        <Button
+          type="button"
+          disabled={saving || !hasUnsavedChanges}
+          onClick={() => void persistReflection()}
+        >
           {saving ? 'Saving...' : 'Save reflection'}
         </Button>
         {savedFlash ? (
-          <span className="text-sm text-[var(--color-muted)]">Saved</span>
+          <span className="text-sm text-[var(--color-muted)]">Saved ✓</span>
         ) : null}
         <Link
           to={`/?date=${reflectionDate}`}

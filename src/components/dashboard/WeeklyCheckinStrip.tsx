@@ -34,7 +34,7 @@ export function WeeklyCheckinStrip({ data, compact = false }: WeeklyCheckinStrip
         <div className={`min-w-0 flex-1 ${compact ? 'lg:flex lg:items-center lg:gap-4' : ''}`}>
           <div className={compact ? 'lg:shrink-0' : ''}>
             <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-terracotta)]">
-              Weekly honest check-in
+              Weekly Haven check-in
             </p>
             <p
               className={`mt-1 font-display font-semibold text-[var(--color-text)] ${compact ? 'text-base lg:mt-0 lg:text-sm' : 'text-lg'}`}
@@ -122,9 +122,7 @@ export function WeeklyCheckinStrip({ data, compact = false }: WeeklyCheckinStrip
         {stats.latestWeight != null && (
           <StatPill compact={compact} label="Weight" value={`${stats.latestWeight} lbs`} />
         )}
-        {stats.medAdherencePct != null && (
-          <StatPill compact={compact} label="Meds taken" value={`${stats.medAdherencePct}%`} />
-        )}
+        <StatPill compact={compact} label="Meds today" value={stats.medsTodayDisplay} />
       </div>
     </Card>
   )

@@ -172,7 +172,14 @@ export async function fetchVisitSummary(userId: string): Promise<VisitSummaryDat
       type: m.item_type,
     })),
     weeklyCheckin: weekCheckin,
-    weekStats: computeWeeklyStats(weekLogs, medItems, weekCheckins, weekStart, weekEnd),
+    weekStats: computeWeeklyStats(
+      weekLogs,
+      medItems,
+      weekCheckins,
+      weekStart,
+      weekEnd,
+      todayISO(),
+    ),
     reflections30d: ((reflectionsRes.data ?? []) as Reflection[]).filter(
       (r) => r.body?.trim() || r.mood_tag,
     ),
