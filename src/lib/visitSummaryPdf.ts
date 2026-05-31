@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf'
 import type { VisitSummaryData } from './visitSummaryData'
-import { formatWeekRange, getWeekStartISO } from './date'
+import { formatShortDate, formatWeekRange, getWeekStartISO } from './date'
 
 const MARGIN = 18
 const LINE = 5.5
@@ -157,6 +157,35 @@ export function downloadVisitSummaryPdf(data: VisitSummaryData) {
       subheading('Notes for provider')
       body(data.weeklyCheckin.provider_notes.trim())
     }
+  }
+
+  const reflections = data.reflections30d ?? []
+  if (reflections.length > 0) {
+    y += 2
+    heading('Patient Reflections — Last 30 Days')
+    for (const entry of reflections) {
+      ensureSpace(14)
+      subheading(formatShortDate(entry.reflection_date))
+      if (entry.mood_tag) {
+        row('Mood', entry.mood_tag)
+      }
+      if (entry.body?.trim()) {
+        body(entry.body.trim())
+      }
+      y += 1
+    }
+    ensureSpace(12)
+    doc.setFont('helvetica', 'italic')
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    const reflectionDisclaimer =
+      'These are personal notes logged by the patient and are not clinical observations.'
+    const reflectionDisclaimerLines = doc.splitTextToSize(reflectionDisclaimer, maxWidth) as string[]
+    for (const line of reflectionDisclaimerLines) {
+      doc.text(line, MARGIN, y)
+      y += 3.5
+    }
+    y += 2
   }
 
   y += 4

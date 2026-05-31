@@ -7,6 +7,7 @@ import type {
   LabValue,
   MedicationCheckin,
   MedicationItem,
+  Reflection,
   WeeklyCheckin,
 } from '../types/database'
 import { computeWeeklyStats } from './weeklyCheckin'
@@ -28,6 +29,7 @@ export interface VisitSummaryData {
   activeMeds: { name: string; dosage: string | null; type: string }[]
   weeklyCheckin: WeeklyCheckin | null
   weekStats: ReturnType<typeof computeWeeklyStats>
+  reflections30d: Reflection[]
 }
 
 function avg(values: (number | null)[]): number | null {
@@ -48,6 +50,7 @@ export async function fetchVisitSummary(userId: string): Promise<VisitSummaryDat
     medItemsRes,
     checkinsRes,
     weekCheckinRes,
+    reflectionsRes,
   ] = await Promise.all([
     supabase
       .from('daily_logs')
@@ -84,6 +87,12 @@ export async function fetchVisitSummary(userId: string): Promise<VisitSummaryDat
       .eq('user_id', userId)
       .eq('week_start', weekStart)
       .maybeSingle(),
+    supabase
+      .from('reflections')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('reflection_date', from30)
+      .order('reflection_date', { ascending: true }),
   ])
 
   const logs = (logsRes.data ?? []) as DailyLog[]
@@ -164,5 +173,8 @@ export async function fetchVisitSummary(userId: string): Promise<VisitSummaryDat
     })),
     weeklyCheckin: weekCheckin,
     weekStats: computeWeeklyStats(weekLogs, medItems, weekCheckins, weekStart, weekEnd),
+    reflections30d: ((reflectionsRes.data ?? []) as Reflection[]).filter(
+      (r) => r.body?.trim() || r.mood_tag,
+    ),
   }
 }

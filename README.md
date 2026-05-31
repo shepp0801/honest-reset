@@ -25,7 +25,7 @@ Personal health tracker for women 40+ / perimenopause — honest daily logging, 
 **Supabase migrations** (run in SQL Editor, in order):
 
 1. `supabase/schema.sql` — base schema (new projects)
-2. `002_blood_pressure.sql` through `008_account_profile_fields.sql`
+2. `002_blood_pressure.sql` through `009_reflections.sql`
 
 **Key features shipped**
 

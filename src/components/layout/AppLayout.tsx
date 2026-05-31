@@ -10,6 +10,7 @@ import { Button } from '../ui/Button'
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/check-in', label: 'Check-in' },
+  { to: '/reflections', label: 'Reflections' },
   { to: '/', label: 'Daily Log', end: true },
   { to: '/labs', label: 'Labs' },
   { to: '/meds', label: 'Medications & Supplements' },

@@ -1,3 +1,15 @@
+export type MoodTag = 'Great' | 'Good' | 'Okay' | 'Rough' | 'Really Hard'
+
+export interface Reflection {
+  id: string
+  user_id: string
+  reflection_date: string
+  mood_tag: MoodTag | null
+  body: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface DailyLog {
   id: string
   user_id: string

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useActiveProfileId } from '../context/ProfileContext'
 import { CollapsibleSection } from '../components/CollapsibleSection'
@@ -7,7 +8,6 @@ import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
-import { Textarea } from '../components/ui/Textarea'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import {
   addDaysISO,
@@ -19,6 +19,7 @@ import {
 import { MedChecklist } from '../components/meds/MedChecklist'
 import { MEAL_SLOTS, type MealType } from '../lib/plannerConstants'
 import { useWaterGoal } from '../hooks/useWaterGoal'
+import { migrateDailyLogNotesToReflection } from '../lib/reflections'
 import { syncMedicationCheckins } from '../lib/medicationCheckins'
 import { supabase } from '../lib/supabase'
 import { INTENSITIES, WORKOUT_TYPES, type WorkoutIntensity, type WorkoutType } from '../lib/workoutOptions'
@@ -118,7 +119,6 @@ type PlannerSnapshotInput = {
   energy: number | null
   mood: number | null
   stress: number | null
-  notes: string
 }
 
 function buildPlannerSnapshot(input: PlannerSnapshotInput): string {
@@ -222,12 +222,7 @@ function medsSummary(total: number, done: number): string {
 }
 
 function feelComplete(input: PlannerSnapshotInput): boolean {
-  return (
-    input.energy != null ||
-    input.mood != null ||
-    input.stress != null ||
-    input.notes.trim() !== ''
-  )
+  return input.energy != null || input.mood != null || input.stress != null
 }
 
 function feelSummary(input: PlannerSnapshotInput): string {
@@ -235,14 +230,17 @@ function feelSummary(input: PlannerSnapshotInput): string {
   if (input.energy != null) parts.push(`Energy ${input.energy}`)
   if (input.mood != null) parts.push(`Mood ${input.mood}`)
   if (input.stress != null) parts.push(`Stress ${input.stress}`)
-  if (input.notes.trim()) parts.push('Notes added')
   return parts.join(' · ') || 'Nothing logged yet'
 }
 
 export function DailyPlannerPage() {
   const { user } = useAuth()
   const profileId = useActiveProfileId()
-  const [logDate, setLogDate] = useState(todayISO)
+  const [searchParams] = useSearchParams()
+  const dateFromUrl = searchParams.get('date')
+  const [logDate, setLogDate] = useState(() =>
+    dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl) ? dateFromUrl : todayISO(),
+  )
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -272,9 +270,14 @@ export function DailyPlannerPage() {
   const [energy, setEnergy] = useState<number | null>(null)
   const [mood, setMood] = useState<number | null>(null)
   const [stress, setStress] = useState<number | null>(null)
-  const [notes, setNotes] = useState('')
 
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)) {
+      setLogDate(dateFromUrl)
+    }
+  }, [dateFromUrl])
 
   const waterGoal = useWaterGoal()
 
@@ -297,7 +300,6 @@ export function DailyPlannerPage() {
       energy,
       mood,
       stress,
-      notes,
     }),
     [
       weight,
@@ -317,7 +319,6 @@ export function DailyPlannerPage() {
       energy,
       mood,
       stress,
-      notes,
     ],
   )
 
@@ -419,7 +420,10 @@ export function DailyPlannerPage() {
     setEnergy(log?.energy_level ?? null)
     setMood(log?.mood ?? null)
     setStress(log?.stress_level ?? null)
-    setNotes(log?.notes ?? '')
+
+    if (log?.notes?.trim()) {
+      await migrateDailyLogNotesToReflection(uid, logDate, log.notes)
+    }
 
     const nextMeals = initialMeals()
     for (const f of (foodRes.data ?? []) as FoodEntry[]) {
@@ -474,7 +478,6 @@ export function DailyPlannerPage() {
         energy: log?.energy_level ?? null,
         mood: log?.mood ?? null,
         stress: log?.stress_level ?? null,
-        notes: log?.notes ?? '',
       }),
     )
 
@@ -530,7 +533,6 @@ export function DailyPlannerPage() {
       energy_level: energy,
       mood,
       stress_level: stress,
-      notes: notes.trim() || null,
     }
 
     const { error: logErr } = await supabase
@@ -664,7 +666,6 @@ export function DailyPlannerPage() {
     energy,
     mood,
     stress,
-    notes,
     meals,
     workouts,
     checkedMedSet,
@@ -937,7 +938,14 @@ export function DailyPlannerPage() {
             <ScaleRow label="Energy level" value={energy} onChange={setEnergy} />
             <ScaleRow label="Mood" value={mood} onChange={setMood} />
             <ScaleRow label="Stress level" value={stress} onChange={setStress} variant="inverted" />
-            <Textarea label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Link
+              to={`/reflections?date=${logDate}`}
+              className="inline-flex text-sm font-medium text-[var(--color-accent)] underline-offset-2 hover:underline"
+            >
+              {logDate === todayISO()
+                ? "Open today's reflection →"
+                : 'Open reflection for this day →'}
+            </Link>
           </div>
         </CollapsibleSection>
 
