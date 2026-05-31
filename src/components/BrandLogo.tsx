@@ -6,11 +6,11 @@ interface BrandLogoProps {
 }
 
 const heights = {
-  sm: 'h-16',
-  header: 'h-20',
-  md: 'h-[5.5rem]',
-  nav: 'h-[5.75rem] max-w-[13.5rem]',
-  lg: 'h-44',
+  sm: 'h-32',
+  header: 'h-40',
+  md: 'h-[11rem]',
+  nav: 'h-[11.5rem] max-w-[27rem]',
+  lg: 'h-[22rem]',
 }
 
 const LOGO_SRC = '/logo.png'
