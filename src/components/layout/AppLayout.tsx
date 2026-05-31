@@ -1,13 +1,12 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { useTheme } from '../../context/ThemeContext'
 import { formatDisplayDate, todayISO } from '../../lib/date'
 import { BrandLogo } from '../BrandLogo'
 import { DailyQuote } from '../DailyQuote'
 import { ProfileSwitcher } from './ProfileSwitcher'
 import { Button } from '../ui/Button'
 
-const navItems = [
+const primaryNavItems = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/check-in', label: 'Check-in' },
   { to: '/reflections', label: 'Reflections' },
@@ -15,9 +14,10 @@ const navItems = [
   { to: '/labs', label: 'Labs' },
   { to: '/meds', label: 'Medications & Supplements' },
   { to: '/goals', label: 'Goals' },
-  { to: '/settings', label: 'Settings' },
   { to: '/trust', label: 'Privacy & Trust' },
 ]
+
+const settingsNavItem = { to: '/settings', label: 'Settings' }
 
 function NavItem({ to, label, end }: { to: string; label: string; end?: boolean }) {
   return (
@@ -39,7 +39,6 @@ function NavItem({ to, label, end }: { to: string; label: string; end?: boolean 
 
 export function AppLayout() {
   const { signOut } = useAuth()
-  const { theme, toggleTheme } = useTheme()
   const { pathname } = useLocation()
   const isPlanner = pathname === '/'
   const isDashboard = pathname === '/dashboard'
@@ -56,14 +55,12 @@ export function AppLayout() {
           </p>
         </div>
         <nav className="mt-6 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-          {navItems.map((item) => (
+          {primaryNavItems.map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
         </nav>
         <div className="flex shrink-0 flex-col gap-2 border-t border-[var(--color-border)] pt-4">
-          <Button variant="ghost" onClick={toggleTheme} className="justify-start">
-            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </Button>
+          <NavItem to={settingsNavItem.to} label={settingsNavItem.label} />
           <Button variant="secondary" onClick={() => signOut()}>
             Sign out
           </Button>
@@ -94,9 +91,18 @@ export function AppLayout() {
                 </div>
               )}
               <div className="flex items-center gap-2 md:hidden">
-                <Button variant="ghost" onClick={toggleTheme} className="px-2">
-                  {theme === 'dark' ? 'Light' : 'Dark'}
-                </Button>
+                <NavLink
+                  to="/settings"
+                  className={({ isActive }) =>
+                    `rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      isActive
+                        ? 'bg-[var(--color-sage)] text-[var(--color-on-sage)]'
+                        : 'text-[var(--color-text)] hover:bg-[color-mix(in_srgb,var(--color-sage)_14%,transparent)]'
+                    }`
+                  }
+                >
+                  Settings
+                </NavLink>
                 <Button variant="secondary" onClick={() => signOut()} className="px-3 py-1.5 text-xs">
                   Out
                 </Button>
@@ -116,7 +122,7 @@ export function AppLayout() {
         </main>
 
         <nav className="fixed bottom-0 left-0 right-0 z-10 flex border-t border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-1 shadow-[0_-4px_20px_rgba(85,93,66,0.08)] md:hidden">
-          {navItems.map((item) => (
+          {primaryNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

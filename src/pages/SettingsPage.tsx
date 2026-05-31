@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../context/ProfileContext'
+import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import { GENDER_OPTIONS } from '../types/database'
 import { Alert } from '../components/ui/Alert'
@@ -14,6 +15,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 export function SettingsPage() {
   const { user } = useAuth()
   const { settings, loading, refreshProfiles } = useProfile()
+  const { theme, toggleTheme } = useTheme()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -112,8 +114,18 @@ export function SettingsPage() {
       <Alert type="error" message={error} onDismiss={() => setError('')} />
       <Alert type="success" message={success} onDismiss={() => setSuccess('')} />
 
+      <Card className="border-l-4 border-l-[var(--color-sage)]">
+        <CardTitle>Appearance</CardTitle>
+        <p className="mb-3 text-sm text-[var(--color-muted)]">
+          Choose light or dark mode for the app. Your preference is saved on this device.
+        </p>
+        <Button type="button" variant="secondary" onClick={toggleTheme}>
+          {theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        </Button>
+      </Card>
+
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Card className="border-l-4 border-l-[var(--color-sage)]">
+        <Card className="border-l-4 border-l-[var(--color-terracotta)]">
           <CardTitle>Your profile</CardTitle>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
