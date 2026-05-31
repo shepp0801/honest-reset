@@ -349,11 +349,14 @@ export function DailyPlannerPage() {
 
   const loadIdRef = useRef(0)
 
-  const loadDay = useCallback(async () => {
+  const loadDay = useCallback(async (options?: { silent?: boolean }) => {
     if (!user || !profileId) return
     const loadId = ++loadIdRef.current
-    setLoading(true)
-    setError('')
+    const showLoading = !options?.silent
+    if (showLoading) {
+      setLoading(true)
+      setError('')
+    }
 
     const uid = profileId
     const [logRes, foodRes, workoutRes, medItemsRes, checkinsRes] = await Promise.all([
@@ -378,7 +381,7 @@ export function DailyPlannerPage() {
     ) {
       if (loadId === loadIdRef.current) {
         setError('Could not load data for this day.')
-        setLoading(false)
+        if (showLoading) setLoading(false)
       }
       return
     }
@@ -458,7 +461,7 @@ export function DailyPlannerPage() {
       }),
     )
 
-    setLoading(false)
+    if (showLoading) setLoading(false)
   }, [user, profileId, logDate])
 
   useEffect(() => {
@@ -622,7 +625,7 @@ export function DailyPlannerPage() {
       setError(errors.join(' '))
     } else {
       setSuccess(`Saved everything for ${formatPlannerNavDate(logDate)}.`)
-      await loadDay()
+      await loadDay({ silent: true })
     }
   }, [
     user,

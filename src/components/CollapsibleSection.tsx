@@ -63,7 +63,7 @@ export function CollapsibleSection({
         </span>
 
         <span
-          className={`shrink-0 text-lg text-[var(--color-muted)] transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center text-3xl font-semibold leading-none text-[#4a5544] transition-transform duration-300 dark:text-[#7d9175] ${open ? 'rotate-180' : ''}`}
           aria-hidden
         >
           ▾
