@@ -2,6 +2,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -23,6 +24,9 @@ interface TrendChartProps {
   chartHeight?: number
   className?: string
   compact?: boolean
+  /** Horizontal dashed goal line (e.g. daily step target) */
+  referenceY?: number | null
+  referenceLabel?: string
 }
 
 export function TrendChart({
@@ -34,7 +38,17 @@ export function TrendChart({
   chartHeight = 220,
   className = '',
   compact = false,
+  referenceY = null,
+  referenceLabel = 'Goal',
 }: TrendChartProps) {
+  const values = data.map((d) => d.value)
+  const refValues = referenceY != null ? [...values, referenceY] : values
+  const min = refValues.length ? Math.min(...refValues) : 0
+  const max = refValues.length ? Math.max(...refValues) : 0
+  const padding = refValues.length ? Math.max(1, (max - min) * 0.08 || 1) : 1
+  const yMin = refValues.length ? Math.floor(min - padding) : 0
+  const yMax = refValues.length ? Math.ceil(max + padding) : 100
+
   return (
     <div
       className={`rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[0_2px_12px_rgba(85,93,66,0.06)] ${compact ? 'p-3' : 'p-4'} ${className}`}
@@ -51,7 +65,11 @@ export function TrendChart({
               tick={{ fontSize: 11, fill: 'var(--color-muted)' }}
               interval="preserveStartEnd"
             />
-            <YAxis tick={{ fontSize: 11, fill: 'var(--color-muted)' }} width={40} />
+            <YAxis
+              domain={[yMin, yMax]}
+              tick={{ fontSize: 11, fill: 'var(--color-muted)' }}
+              width={40}
+            />
             <Tooltip
               contentStyle={{
                 background: 'var(--color-surface-elevated)',
@@ -61,6 +79,20 @@ export function TrendChart({
               }}
               formatter={(value: number) => [`${value}${unit ? ` ${unit}` : ''}`, title]}
             />
+            {referenceY != null && (
+              <ReferenceLine
+                y={referenceY}
+                stroke="var(--color-muted)"
+                strokeDasharray="6 4"
+                strokeWidth={1.5}
+                label={{
+                  value: `${referenceLabel} ${referenceY.toLocaleString()}`,
+                  position: 'insideTopRight',
+                  fill: 'var(--color-muted)',
+                  fontSize: 10,
+                }}
+              />
+            )}
             <Line
               type="monotone"
               dataKey="value"

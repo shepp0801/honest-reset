@@ -3,6 +3,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -24,6 +25,8 @@ interface BpTrendChartProps {
   chartHeight?: number
   className?: string
   compact?: boolean
+  targetSystolic?: number | null
+  targetDiastolic?: number | null
 }
 
 const SYSTOLIC_COLOR = 'var(--color-terracotta)'
@@ -73,7 +76,21 @@ export function BpTrendChart({
   chartHeight = 200,
   className = '',
   compact = false,
+  targetSystolic = null,
+  targetDiastolic = null,
 }: BpTrendChartProps) {
+  const bpValues = data.flatMap((d) => [d.systolic, d.diastolic])
+  const goalValues = [
+    ...(targetSystolic != null ? [targetSystolic] : []),
+    ...(targetDiastolic != null ? [targetDiastolic] : []),
+  ]
+  const allValues = [...bpValues, ...goalValues]
+  const min = allValues.length ? Math.min(...allValues) : 0
+  const max = allValues.length ? Math.max(...allValues) : 0
+  const padding = allValues.length ? Math.max(4, (max - min) * 0.08 || 4) : 4
+  const yMin = allValues.length ? Math.floor(min - padding) : 0
+  const yMax = allValues.length ? Math.ceil(max + padding) : 200
+
   return (
     <div
       className={`rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[0_2px_12px_rgba(85,93,66,0.06)] ${compact ? 'p-3' : 'p-4'} ${className}`}
@@ -92,7 +109,7 @@ export function BpTrendChart({
               vertical={false}
             />
             <XAxis dataKey="label" tick={axisTick} interval="preserveStartEnd" />
-            <YAxis tick={axisTick} width={36} domain={['auto', 'auto']} />
+            <YAxis tick={axisTick} width={36} domain={[yMin, yMax]} />
             <Tooltip
               contentStyle={tooltipStyle}
               labelStyle={{
@@ -106,6 +123,36 @@ export function BpTrendChart({
               }}
             />
             <Legend content={<BpLegend compact={compact} />} />
+            {targetSystolic != null && (
+              <ReferenceLine
+                y={targetSystolic}
+                stroke={SYSTOLIC_COLOR}
+                strokeDasharray="6 4"
+                strokeWidth={1.5}
+                strokeOpacity={0.65}
+                label={{
+                  value: `Goal ${targetSystolic}`,
+                  position: 'insideTopRight',
+                  fill: SYSTOLIC_COLOR,
+                  fontSize: 10,
+                }}
+              />
+            )}
+            {targetDiastolic != null && (
+              <ReferenceLine
+                y={targetDiastolic}
+                stroke={DIASTOLIC_COLOR}
+                strokeDasharray="6 4"
+                strokeWidth={1.5}
+                strokeOpacity={0.65}
+                label={{
+                  value: `Goal ${targetDiastolic}`,
+                  position: 'insideBottomRight',
+                  fill: DIASTOLIC_COLOR,
+                  fontSize: 10,
+                }}
+              />
+            )}
             <Line
               type="monotone"
               dataKey="systolic"

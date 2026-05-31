@@ -2,6 +2,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -16,6 +17,7 @@ interface WeightTrendChartProps {
   chartHeight?: number
   className?: string
   compact?: boolean
+  targetWeightLbs?: number | null
 }
 
 function weightChangeLabel(data: ChartPoint[]): string | null {
@@ -35,11 +37,13 @@ export function WeightTrendChart({
   chartHeight = 220,
   className = '',
   compact = false,
+  targetWeightLbs = null,
 }: WeightTrendChartProps) {
   const change = weightChangeLabel(data)
   const values = data.map((d) => d.value)
-  const min = values.length ? Math.min(...values) : 0
-  const max = values.length ? Math.max(...values) : 0
+  const allValues = targetWeightLbs != null ? [...values, targetWeightLbs] : values
+  const min = allValues.length ? Math.min(...allValues) : 0
+  const max = allValues.length ? Math.max(...allValues) : 0
   const padding = values.length ? Math.max(2, (max - min) * 0.1 || 2) : 2
   const yMin = values.length ? Math.floor(min - padding) : 0
   const yMax = values.length ? Math.ceil(max + padding) : 200
@@ -80,6 +84,20 @@ export function WeightTrendChart({
               }}
               formatter={(value: number) => [`${value} lbs`, 'Weight']}
             />
+            {targetWeightLbs != null && (
+              <ReferenceLine
+                y={targetWeightLbs}
+                stroke="var(--color-muted)"
+                strokeDasharray="6 4"
+                strokeWidth={1.5}
+                label={{
+                  value: `Goal ${targetWeightLbs} lbs`,
+                  position: 'insideTopRight',
+                  fill: 'var(--color-muted)',
+                  fontSize: 10,
+                }}
+              />
+            )}
             <Line
               type="monotone"
               dataKey="value"

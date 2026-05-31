@@ -1,3 +1,5 @@
+import { resetExtendedHealthGoals } from './healthGoals'
+
 export const DEFAULT_WATER_GOAL_OZ = 64
 export const DEFAULT_MACRO_GOALS = {
   calories: 2000,
@@ -72,6 +74,7 @@ export function resetGoalsToDefaults(profileId?: string) {
     localStorage.removeItem(WATER_KEY)
     localStorage.removeItem(MACRO_KEY)
   }
+  resetExtendedHealthGoals(profileId)
   notifyGoalsUpdated()
 }
 

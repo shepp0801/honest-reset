@@ -12,6 +12,7 @@ import { VisitSummaryCard } from '../components/dashboard/VisitSummaryCard'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { useWeeklyDashboard } from '../hooks/useWeeklyDashboard'
 import { useDashboardData } from '../hooks/useDashboardData'
+import { useHealthGoals } from '../hooks/useHealthGoals'
 import { todayISO } from '../lib/date'
 import { supabase } from '../lib/supabase'
 
@@ -22,6 +23,7 @@ export function DashboardPage() {
   const { user } = useAuth()
   const profileId = useActiveProfileId()
   const { data, loading, error, refetch } = useDashboardData(profileId)
+  const { chartGoals } = useHealthGoals()
   const weekly = useWeeklyDashboard(profileId)
   const [waterAmount, setWaterAmount] = useState('8')
   const [waterSaving, setWaterSaving] = useState(false)
@@ -106,6 +108,7 @@ export function DashboardPage() {
           data={data?.weightChart ?? []}
           chartHeight={DESKTOP_CHART_HEIGHT}
           compact
+          targetWeightLbs={chartGoals.targetWeightLbs}
         />
         <TrendChart
           title="A1C (all time)"
@@ -130,6 +133,8 @@ export function DashboardPage() {
           color="#6E7D66"
           chartHeight={DESKTOP_CHART_HEIGHT}
           compact
+          referenceY={chartGoals.dailyStepGoal}
+          referenceLabel="Goal"
         />
         <BpTrendChart
           title="Blood pressure (30 days)"
@@ -137,6 +142,8 @@ export function DashboardPage() {
           chartHeight={DESKTOP_CHART_HEIGHT}
           compact
           emptyMessage="Log blood pressure on the Daily Log"
+          targetSystolic={chartGoals.targetSystolic}
+          targetDiastolic={chartGoals.targetDiastolic}
         />
       </div>
 
@@ -148,6 +155,7 @@ export function DashboardPage() {
             data={data?.weightChart ?? []}
             chartHeight={MOBILE_CHART_HEIGHT}
             className="h-full"
+            targetWeightLbs={chartGoals.targetWeightLbs}
           />
           <TrendChart
             title="A1C (all time)"
@@ -176,6 +184,8 @@ export function DashboardPage() {
             data={data?.stepsChart ?? []}
             color="#6E7D66"
             chartHeight={MOBILE_CHART_HEIGHT}
+            referenceY={chartGoals.dailyStepGoal}
+            referenceLabel="Goal"
           />
           <BpTrendChart
             title="Blood pressure (30 days)"
@@ -183,6 +193,8 @@ export function DashboardPage() {
             chartHeight={MOBILE_CHART_HEIGHT}
             className="w-full"
             emptyMessage="Log blood pressure on the Daily Log"
+            targetSystolic={chartGoals.targetSystolic}
+            targetDiastolic={chartGoals.targetDiastolic}
           />
         </div>
 
