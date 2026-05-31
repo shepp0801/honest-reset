@@ -88,7 +88,15 @@ export function ReflectionsPage() {
 
     if (logRes.error || reflectionRes.error || listRes.error) {
       if (loadId === loadIdRef.current) {
-        setError('Could not load reflection for this day.')
+        const detail =
+          reflectionRes.error?.message ??
+          listRes.error?.message ??
+          logRes.error?.message ??
+          'Unknown error'
+        const hint = detail.includes('reflections')
+          ? ' Run supabase/migrations/009_reflections.sql in the Supabase SQL Editor if you have not already.'
+          : ''
+        setError(`Could not load reflection for this day: ${detail}${hint}`)
         setLoading(false)
       }
       return
